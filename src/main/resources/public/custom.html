@@ -1,0 +1,33 @@
+<html>
+<head>
+    <link href="https://vjs.zencdn.net/6.2.7/video-js.css" rel="stylesheet">
+    <script type="text/javascript" src="https://ajax.aspnetcdn.com/ajax/jquery/jquery-2.1.4.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+        }
+    </style>
+</head>
+
+<body>
+
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+<video id="video" width="100%" height="auto"></video>
+<script>
+    $.get('/customStreamURL', function(data) {
+        var streamURL = JSON.parse(data);
+        if (Hls.isSupported()) {
+            var video = document.getElementById('video');
+            var hls = new Hls();
+            hls.loadSource(streamURL);
+            hls.attachMedia(video);
+            hls.on(Hls.Events.MANIFEST_PARSED,function() {
+                video.play();
+            });
+        }
+    });
+</script>
+
+</body>
+</html>

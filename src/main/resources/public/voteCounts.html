@@ -1,0 +1,178 @@
+<html>
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/knockout/3.4.0/knockout-min.js"></script>
+    <script type="text/javascript" src="http://ajax.aspnetcdn.com/ajax/jquery/jquery-2.1.4.min.js"></script>
+    <script type="text/javascript" src="http://ajax.aspnetcdn.com/ajax/globalize/0.1.1/globalize.min.js"></script>
+    <script type="text/javascript" src="http://cdn3.devexpress.com/jslib/15.2.5/js/dx.chartjs.js"></script>
+    <link href="/uiCSS.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Press+Start+2P" rel="stylesheet">
+
+    <script>
+        function createList(dict) {
+            var arr = [];
+
+            for (var key in dict) {
+                if (dict.hasOwnProperty(key)) {
+                    arr.push([key, dict[key]]);
+                }
+            }
+
+            return arr;
+        }
+
+        function createElectionDiv(election) {
+            var electionTopic = election["topic"];
+            var electionDiv = $("<div class=\"election\">");
+
+            electionDiv.append($('<h3>', {
+                class: "topic",
+                text: electionTopic,
+            }));
+
+            var polls = election['polls'];
+
+            var labelToVotes = {};
+            for (var poll in polls) {
+                var label = JSON.parse(poll).label;
+                if (!labelToVotes.hasOwnProperty(label)) {
+                    labelToVotes[label] = 0;
+                }
+                labelToVotes[label] = labelToVotes[label] + polls[poll];
+            }
+
+            var candidates = createList(labelToVotes);
+            var candidateList = $('<ul>', { class: "candidateList", 'id': electionTopic });
+
+            candidates.sort(function(first, second) {
+                return second[1] - first[1];
+            });
+
+            for (var j = 0; j < candidates.length; j++) {
+                var candidate = candidates[j];
+
+                var candidateName = candidate[0];
+                var voterCount = labelToVotes[candidate[0]];
+
+                if (voterCount == 0) {
+                    continue;
+                }
+
+                var candidateListItem = $('<li>', { class: "candidateListItem", 'id': candidateName });
+
+                candidateListItem.append($("<span class=\"candidate\">").text(candidateName));
+                candidateListItem.append($("<span class=\"voters\">").text(voterCount));
+                candidateList.append(candidateListItem);
+            }
+
+            electionDiv.append(candidateList);
+
+            return electionDiv;
+        }
+
+        setInterval(function () {
+            $.get('/voteCounts', function(data) {
+                var topicToElection = JSON.parse(data);
+
+                $("#elections").empty();
+
+                topicToElection.sort(function(first, second) {
+                    return first['rank'] - second['rank'];
+                });
+
+                var topics = topicToElection.length;
+                for (var topic in topicToElection) {
+                    if (topicToElection.hasOwnProperty(topic)) {
+                        var electionDiv = createElectionDiv(topicToElection[topic]);
+                        $("#elections").append(electionDiv);
+                        if (topics != 1) {
+                            $("#elections").append("<hr>");
+                        }
+                        topics--;
+                    }
+                }
+
+            });
+        }, 2000);
+    </script>
+
+    <style>
+        h3 {
+            font-size: 1.4em;
+        }
+
+        hr {
+            border: 0;
+            width: 75%;
+            height: 2px;
+            margin: 15px;
+            background-image: linear-gradient(to right, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0));
+        }
+
+        ul {
+            padding-left: 0;
+            margin-top: 0;
+            margin: 20px;
+            display: inline-block;
+        }
+
+        li {
+            padding-top: 5px;
+            padding-bottom: 15px;
+            font-size: 13pt;
+        }
+
+        table {
+            width: 100%;
+            height: 100%;
+            border: 1px white;
+            text-align: center;
+        }
+
+        td {
+            text-align: center;
+            width: 100%;
+            height: 100%;
+        }
+
+        hr {
+            margin: 0px;
+        }
+
+        ul {
+            width: 100%;
+            color: white;
+            list-style-type: none;
+            font-family: 'Press Start 2P', cursive;
+        }
+
+        .topic {
+            line-height: 1.5;
+            color: magenta;
+        }
+
+        .candidate {
+            float: left;
+        }
+
+        .voters {
+            float: right;
+            margin-right: 50px;
+        }
+
+    </style>
+</head>
+<body>
+
+
+<div class="outerContainer" id="topCommands">
+    <center>
+        <div id="elections"></div>
+    </center>
+</div>
+
+<br>
+
+</body>
+</html>

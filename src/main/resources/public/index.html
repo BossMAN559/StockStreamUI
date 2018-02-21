@@ -1,0 +1,102 @@
+<html>
+
+<head>
+
+    <script src="https://code.jquery.com/jquery.min.js"></script>
+    <script type="text/javascript" src="/reconnecting-websocket.js"></script>
+    <link href="https://fonts.googleapis.com/css?family=Press+Start+2P" rel="stylesheet">
+    <link href="/uiCSS.css" rel="stylesheet">
+
+    <script>
+        var webSocket = new ReconnectingWebSocket("ws://" + location.hostname + ":" + location.port + "/webTVSocket");
+
+        console.log("created websocket " + webSocket + " -> " + webSocket.readyState);
+
+        webSocket.onmessage = function (wsObject) {
+            var strData = JSON.stringify(wsObject);
+            console.log("received message " + strData);
+
+            var channel = JSON.parse(wsObject['data']);
+
+            if (channel['musicChannel']) {
+                console.log("music channel");
+
+                $('#hiddenframe').attr('src', channel['streamURL']);
+                $('#tvframe').attr('src', "/news.html");
+            } else {
+                console.log("not music channel");
+
+                $('#hiddenframe').attr('src', "");
+                $('#tvframe').attr('src', channel['streamURL']);
+            }
+
+            setTimeout(function() {
+                $('#tvframe').contents().find('#mature-link').trigger( "click" );
+            }, 5000);
+        };
+
+        setInterval(function () {
+            $.get('/channelElection', function(data) {
+                $("#elections").empty();
+
+                var election = JSON.parse(data);
+
+                if (election == null) {
+                    $("#electionframe").fadeOut(500);
+                    return;
+                } else {
+                    $("#electionframe").fadeIn(500);
+                    $("#electionframe").height( $("#electionframe").contents().find("body").height() );
+                }
+            });
+        }, 500);
+
+    </script>
+
+    <script>
+        function resizeIframe(obj) {
+            obj.style.height = obj.contentWindow.document.body.scrollHeight + 'px';
+        }
+    </script>
+
+    <style type="text/css">
+
+        html {
+            background-color: black;
+        }
+
+        body {
+            margin: 0;
+        }
+
+        .contentframe {
+            width: 100%;
+            height: 100%;
+            border: 0;
+        }
+
+        #electionframe {
+            background: none transparent;
+            display: none;
+            width: 35%;
+            position: absolute;
+            display: inline-block;
+            right: 25px;
+            top: 25px;
+            overflow: visible;
+        }
+    </style>
+
+</head>
+
+<body>
+
+<iframe id="electionframe" src="/channelChange.html" allowtransparency="true" frameBorder="0" onload="resizeIframe(this);"></iframe>
+<iframe class="contentframe" id="tvframe" src="/welcome.html"></iframe>
+<iframe id="hiddenframe" src=""></iframe>
+
+</body>
+
+</html>
+
+

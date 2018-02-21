@@ -1,0 +1,181 @@
+<html>
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/knockout/3.4.0/knockout-min.js"></script>
+    <script type="text/javascript" src="http://ajax.aspnetcdn.com/ajax/jquery/jquery-2.1.4.min.js"></script>
+    <script type="text/javascript" src="http://ajax.aspnetcdn.com/ajax/globalize/0.1.1/globalize.min.js"></script>
+    <script type="text/javascript" src="http://cdn3.devexpress.com/jslib/15.2.5/js/dx.chartjs.js"></script>
+
+    <link href="https://fonts.googleapis.com/css?family=Press+Start+2P" rel="stylesheet">
+    <link href="/uiCSS.css" rel="stylesheet">
+
+    <script>
+        function zfill(number, size) {
+            number = number.toString();
+            while (number.length < size) number = "0" + number;
+            return number;
+        }
+
+        function formatSeconds(secondsRemaining) {
+            var days = Math.floor(secondsRemaining / 60 / 60 / 24);
+            var hours = Math.floor(secondsRemaining / 60 / 60) - (days * 24);
+            var minutes = Math.floor(secondsRemaining / 60) - ((hours * 60) + (days * 24 * 60));
+            var seconds = Math.floor(secondsRemaining - ((minutes * 60) + (hours * 60 * 60) + (days * 24 * 60 * 60)));
+            var milliseconds = Math.floor((secondsRemaining % 1) * 100);
+
+            var textDisplay = "";
+
+            if (days > 0) {
+                textDisplay += days + ":";
+            }
+            if (days > 0 || hours > 0) {
+                textDisplay += zfill(hours, 2) + ":";
+            }
+
+            if (days > 0 || hours > 0 || minutes > 0) {
+                textDisplay += zfill(minutes, 2) + ":";
+            }
+
+            textDisplay += zfill(seconds, 2);
+
+            return textDisplay;
+        }
+
+        var nextChannel = "";
+
+        function computeRemainingMS(nextEvent) {
+            var now = (new Date()).getTime();
+            var countdown = nextEvent - now;
+            var remaining = (countdown / 1000).toFixed(2);
+
+            if (remaining < 0) {
+                remaining = 0;
+            }
+
+            return remaining;
+        }
+
+        function createElectionDiv(election) {
+            var electionTopic = election["topic"];
+            var expirationDate = election["expirationDate"];
+            var electionDiv = $("<div class=\"election\">");
+
+            electionDiv.append($('<h3>', {
+                class: "topic",
+                text: "Change to " + nextChannel + "?",
+            }));
+
+            var remaining = computeRemainingMS(expirationDate);
+            remaining = formatSeconds(remaining);
+
+            electionDiv.append($('<h2>', {
+                class: "topic",
+                text: remaining,
+            }));
+
+            var candidateToVoters = election['candidateToVoters'];
+            var candidateToRunnable = election['candidateToRunnable'];
+
+            var candidateList = $('<div>', { class: "candidateList", 'id': electionTopic });
+
+            for (var candidate in candidateToRunnable) {
+                var candidateListItem = $('<div>', { class: "candidateListItem", 'id': candidate });
+                var voterCount = (candidateToVoters[candidate] || []).length;
+                candidateListItem.append($("<span class=\"candidate\">").text(candidate));
+                candidateListItem.append($("<span class=\"voters\">").text(voterCount));
+                candidateList.append(candidateListItem);
+                candidateList.append($("<br>"));
+                candidateList.append($("<br>"));
+            }
+
+            electionDiv.append(candidateList);
+
+            return electionDiv;
+        }
+
+        setInterval(function () {
+            $.get('/nextChannel', function(data) {
+                var next = JSON.parse(data);
+
+                if (next) {
+                    nextChannel = next.name;
+                }
+            });
+        }, 500);
+
+        setInterval(function () {
+            $.get('/channelElection', function(data) {
+                $("#elections").empty();
+
+                var election = JSON.parse(data);
+
+                if (election == null) {
+                    return;
+                }
+
+                var electionDiv = createElectionDiv(election);
+                $("#elections").append(electionDiv);
+            });
+        }, 500);
+    </script>
+
+    <style>
+
+        h3 {
+            font-size: 1.4em;
+            margin: 2px;
+        }
+
+        h2 {
+            font-size: 1.5em;
+            margin: 2px;
+        }
+
+        body {
+            filter: alpha(opacity=50);
+            font-size: 1.1em;
+        }
+
+        .topic {
+            line-height: 1.5;
+        }
+
+        .candidate {
+            font-size: 1.4em;
+            float: left;
+            color: magenta;
+            margin-left: 5px;
+        }
+
+        .voters {
+            font-size: 1.4em;
+            float: right;
+            margin-right: 50px;
+        }
+
+        .outerContainer {
+            filter: alpha(opacity=50);
+            overflow: visible;
+            box-sizing: border-box;
+        }
+
+        #elections {
+            filter: alpha(opacity=50);
+        }
+
+    </style>
+</head>
+<body>
+
+
+<div class="outerContainer" id="topCommands">
+    <center>
+        <div id="elections"></div>
+    </center>
+</div>
+
+<br>
+
+</body>
+</html>

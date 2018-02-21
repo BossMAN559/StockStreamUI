@@ -1,0 +1,244 @@
+<html>
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/knockout/3.4.0/knockout-min.js"></script>
+    <script type="text/javascript" src="https://ajax.aspnetcdn.com/ajax/jquery/jquery-2.1.4.min.js"></script>
+    <script type="text/javascript" src="https://ajax.aspnetcdn.com/ajax/globalize/0.1.1/globalize.min.js"></script>
+    <script type="text/javascript" src="https://cdn3.devexpress.com/jslib/15.2.5/js/dx.chartjs.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/velocity/1.5.0/velocity.min.js"></script>
+    <link href="/uiCSS.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Press+Start+2P" rel="stylesheet">
+
+
+    <script>
+
+        function createScoreDiv(score, rank) {
+
+            var scoreDiv = $("<div class=\"score\">");
+
+            var isDecrease = score["decimalReturn"] < 0;
+
+            scoreDiv.append($('<div>', {
+                class: "rank",
+                text: "#" + rank,
+            }));
+
+
+            var descriptionDiv = $("<div class=\"description\">");
+
+            descriptionDiv.append($('<span>', {
+                class: (isDecrease ? "decrease" : "increase") + " decimalReturn",
+                text: (isDecrease ? "-" : "+") + Math.abs(score["decimalReturn"] * 100).toFixed(2) + "%",
+            }));
+            descriptionDiv.append($('<span>', {
+                text: " on ",
+            }));
+            descriptionDiv.append($('<span>', {
+                class: "hilight",
+                text: score["qualifiedTrades"],
+            }));
+            descriptionDiv.append($('<span>', {
+                text: " trades.",
+            }));
+            scoreDiv.append(descriptionDiv);
+
+            scoreDiv.append($('<div>', {
+                class: "playerId",
+                text: score["playerId"].split(":")[1],
+            }));
+
+            scoreDiv.append($('<hr>'));
+
+            return scoreDiv;
+        }
+
+
+        function slideDown(marqueeId, duration) {
+            var element = document.querySelector('#' + marqueeId);
+            $.Velocity(
+                element,
+                {
+                    translateY: [
+                        -$('#' + marqueeId).height(),
+                        $(window).height()
+                    ]
+                },
+                {
+                    duration: duration,
+                    easing: 'linear',
+                    complete: function () {
+                        element.remove();
+                    },
+                }
+            );
+        }
+
+        var marqueeCount = 0;
+
+        function runMarquee(marqueeId) {
+
+            var height = $('#' + marqueeId).height() + $(window).height();
+            var duration = height * 20;
+
+            var oneScreenDuration = (($(window).height()/height) * duration);
+            var timeToTopVisible = duration - oneScreenDuration;
+
+            setTimeout(updateScoresList, timeToTopVisible);
+
+            slideDown(marqueeId, duration);
+
+            marqueeCount++;
+        }
+
+        function updateScoresList() {
+            $.get('/scores', function(data) {
+                var marqueeId = 'marquee-' + marqueeCount;
+
+                $('#frame').append($('<div>', {
+                    class: "marquee",
+                    id: marqueeId,
+                }));
+
+                var scores = JSON.parse(data);
+
+                var j = 1;
+                scores.forEach(function(score) {
+                    var scoreDiv = createScoreDiv(score, j);
+                    $('#' + marqueeId).append(scoreDiv);
+                    j += 1;
+                });
+
+                runMarquee(marqueeId);
+            }).fail(function() {
+                setTimeout(updateQuotesList, 10000);
+            });
+        }
+
+        updateScoresList();
+    </script>
+
+    <style>
+        .frame {
+            margin-top: 10px;
+            width: 100%;
+        }
+
+        .padded {
+            margin-top: 8px;
+            margin-bottom: 8px;
+        }
+
+        h1 {
+            left: 45%;
+            padding-bottom: 5px;
+            padding-top: 5px;
+            font-size: 3em;
+            margin: 1px;
+            color: white;
+            line-height: 1.5;
+            text-shadow: -1px 0 black, 0 1px black, 1px 0 black, 0 -1px black;
+            text-shadow:
+                -2px -2px 0 #1b2840,
+                1px -1px 0 #1b2840,
+                -1px 1px 0 #1b2840,
+                1px 1px 0 #1b2840;
+            filter: drop-shadow(0px 0px 5px cyan);
+        }
+
+        .title {
+            border: 2px solid white;
+            position: absolute;
+            right: 0;
+            left: 0;
+            top: 0px;
+            z-index: 999;
+            background-color: black;
+        }
+
+        .playerId {
+            padding-bottom: 3px;
+            padding-top: 3px;
+            margin-right: 0px;
+            padding-right: 0px;
+            font-size: 6vw;
+            color: white;
+            line-height: 1.5;
+            text-shadow: -1px 0 black, 0 1px black, 1px 0 black, 0 -1px black;
+            text-shadow:
+                -2px -2px 0 #1b2840,
+                1px -1px 0 #1b2840,
+                -1px 1px 0 #1b2840,
+                1px 1px 0 #1b2840;
+            filter: drop-shadow(0px 0px 5px cyan);
+        }
+
+        .increase {
+            color: #00d097;
+        }
+
+        .dollarsSpent {
+            padding: 2px;
+            padding-bottom: 5px;
+            color: lightgrey;
+            font-size: 1.3em;
+        }
+
+        .dollarsSold {
+            padding: 2px;
+            color: lightgrey;
+            padding-bottom: 5px;
+        }
+
+        .description {
+            margin: 0px;
+            font-size: 4.1vw;
+            padding-top: 15px;
+            line-height: 1.2;
+            color: lightgrey;
+        }
+
+        .hilight {
+            color: white;
+            font-size: 1em;
+        }
+
+        .score {
+            width: auto;
+            height: 100%;
+            border: 1px solid white;
+        }
+
+        .marquee {
+            margin: 0;
+            width: 100%;
+            position: absolute;
+        }
+
+        .rank {
+            float: left;
+            margin: 4px;
+            padding-top: 5px;
+            color: #00e700;
+            font-size: 6vw;
+        }
+
+        hr {
+            width: 0px;
+            background-color: black;
+            border-color: black;
+            background-image: linear-gradient(to right, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0), rgba(255, 255, 255, 0));
+        }
+
+        .decrease {
+            color: #fa5311;
+        }
+    </style>
+</head>
+<body>
+
+<center><div class="title"><h1>Top Scores</h1></div></center>
+<center class="frame" id="frame"></center>
+
+</body>
+</html>
